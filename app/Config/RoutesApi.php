@@ -37,6 +37,7 @@ $routes->group('api', ['filter' => 'jwt'], function ($routes) {
     $routes->post('dokter', 'Api\Dokter::index');
     $routes->post('dokter/danSpesialis', 'Api\Dokter::danSpesialis');
     $routes->get('jabatan', 'Api\Jabatan::index');
+    $routes->get('jabatan/with-petugas', 'Api\Jabatan::withPetugas');
 
     $routes->post('petugas/by-jbtn', 'Api\Petugas::getByJbtn');
     $routes->post('petugas/by-nips', 'Api\Petugas::getByNips');
