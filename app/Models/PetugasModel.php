@@ -73,13 +73,13 @@ class PetugasModel extends Model
     public function danJabatanByJabatan($kd_jbtn)
     {
         return $this->select('
-                petugas.nip,
-                petugas.nama,
-                petugas.kd_jbtn,
-                jabatan.nm_jbtn
-            ')
+            petugas.nip,
+            petugas.nama,
+            petugas.kd_jbtn,
+            jabatan.nm_jbtn
+        ')
             ->join('jabatan', 'jabatan.kd_jbtn = petugas.kd_jbtn', 'left')
-            ->where('petugas.kd_jbtn', $kd_jbtn)
+            ->whereIn('petugas.kd_jbtn', $kd_jbtn)
             ->get()
             ->getResultArray();
     }

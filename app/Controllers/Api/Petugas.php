@@ -82,8 +82,12 @@ class Petugas extends BaseController
          * Ambil filter jabatan
          * support: JSON body, form-data, query string
          */
-        $kd_jbtn = $this->request->getVar('jbtn');
-
+        $kd_jbtn = $this->request->getVar('jbtn', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+        if ($kd_jbtn) {
+            if (!is_array($kd_jbtn)) {
+                $kd_jbtn = [$kd_jbtn];
+            }
+        }
         /**
          * Ambil data dari model
          */

@@ -43,4 +43,9 @@ class JabatanModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+    public function danJabatanByJabatan($kd_jbtn)
+    {
+        return $this->whereIn('kd_jbtn', $kd_jbtn)
+            ->findAll();
+    }
 }
