@@ -68,7 +68,6 @@ class Petugas extends BaseController
     public function DanJabatan()
     {
         $loginUser = $this->request->user ?? null;
-
         if (! $loginUser) {
             return $this->response
                 ->setStatusCode(401)
@@ -77,26 +76,14 @@ class Petugas extends BaseController
                     'message' => 'Unauthorized',
                 ]);
         }
-
-        /**
-         * Ambil filter jabatan
-         * support: JSON body, form-data, query string
-         */
-        $kd_jbtn = $this->request->getVar('jbtn', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
-        if ($kd_jbtn) {
-            if (!is_array($kd_jbtn)) {
-                $kd_jbtn = [$kd_jbtn];
-            }
+        // Ambil filter jabatan (array atau null)
+        $kd_jbtn = $this->request->getVar('jbtn');
+        // Jika dikirim satu nilai, ubah menjadi array
+        if (!empty($kd_jbtn) && !is_array($kd_jbtn)) {
+            $kd_jbtn = [$kd_jbtn];
         }
-        /**
-         * Ambil data dari model
-         */
-        if ($kd_jbtn) {
-            $data = $this->petugasModel->danJabatanByJabatan($kd_jbtn);
-        } else {
-            $data = $this->petugasModel->danJabatan();
-        }
-
+        // Ambil data
+        $data = !empty($kd_jbtn) ? $this->petugasModel->danJabatanByJabatan($kd_jbtn) : $this->petugasModel->danJabatan();
         return $this->response
             ->setStatusCode(200)
             ->setJSON([
