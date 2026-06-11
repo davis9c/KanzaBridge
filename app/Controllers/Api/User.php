@@ -2,12 +2,12 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
+use App\Controllers\Api\BaseApiController;
 use App\Models\UserModel;
 
-class User extends BaseController
+class User extends BaseApiController
 {
-    protected $userModel;
+    protected UserModel $userModel;
 
     public function __construct()
     {
@@ -16,17 +16,21 @@ class User extends BaseController
 
     /**
      * GET api/users
+     *
+     * NOTE: Endpoint ini dapat berisi field sensitif.
+     * Jangan gunakan di production tanpa menyaring data.
      */
     public function index()
     {
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
+        }
+
         $users = $this->userModel->getAllUsers();
 
-        $data = $users;
-
-        return $this->response->setJSON([
-            'status'  => 200,
-            'message' => 'Data user',
-            'data'    => $data,
-        ]);
+        return $this->respondSuccess([
+            'data' => $users,
+        ], 'Data user');
     }
 }

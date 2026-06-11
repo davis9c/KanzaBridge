@@ -2,12 +2,12 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
+use App\Controllers\Api\BaseApiController;
 use App\Models\PegawaiModel;
 
-class Pegawai extends BaseController
+class Pegawai extends BaseApiController
 {
-    protected $pegawaiModel;
+    protected PegawaiModel $pegawaiModel;
 
     public function __construct()
     {
@@ -16,65 +16,52 @@ class Pegawai extends BaseController
 
     public function index()
     {
-        /**
-         * USER LOGIN (DARI JWT)
-         * Aman: cek dulu apakah diset oleh JwtAuthFilter
-         */
-        $loginUser = $this->request->user ?? null;
-
-        if (! $loginUser) {
-            return $this->response->setStatusCode(401)->setJSON([
-                'status'  => 401,
-                'message' => 'Unauthorized'
-            ]);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
         }
+
         $pegawai = $this->pegawaiModel->getAllWithJabatan();
 
-        $data = array_map(function ($row) {
-            //$row['nik'] = hashid_encode($row['nik']);
-            return $row;
-        }, $pegawai);
-
-        return $this->response->setJSON([
-            'status'     => 200,
-            'message'    => 'Data Pegawai',
-            // 'login_user' => $loginUser, // ❌ sebaiknya jangan expose di production
-            'data'       => $data,
-        ]);
+        return $this->respondSuccess([
+            'data' => $pegawai,
+        ], 'Data Pegawai');
     }
+
     public function getByIds()
     {
-        $input = $this->request->getJSON(true);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
+        }
+
+        $input = $this->getJsonInput();
 
         if (! isset($input['ids']) || ! is_array($input['ids'])) {
-            return $this->response->setStatusCode(400)->setJSON([
-                'status'  => 400,
-                'message' => 'ids wajib array'
-            ]);
+            return $this->respondError('ids wajib array', 400);
         }
 
         $pegawai = $this->pegawaiModel
             ->select('id, nama')
-            /**
-             * tambahkan tampilkan jabatan untuk petugas dan dokter spesialis jika dokter
-             */
             ->whereIn('id', $input['ids'])
             ->findAll();
 
-        return $this->response->setJSON([
-            'status' => 200,
-            'data'   => $pegawai
-        ]);
+        return $this->respondSuccess([
+            'data' => $pegawai,
+        ], 'Data pegawai berdasarkan ids');
     }
+
     public function getByNik()
     {
-        $input = $this->request->getJSON(true);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
+        }
+
+        $input = $this->getJsonInput();
 
         if (! isset($input['nik'])) {
-            return $this->response->setStatusCode(400)->setJSON([
-                'status'  => 400,
-                'message' => 'nik wajib array'
-            ]);
+            return $this->respondError('nik wajib diisi', 400);
         }
 
         $pegawai = $this->pegawaiModel
@@ -82,9 +69,12 @@ class Pegawai extends BaseController
             ->where('nik', $input['nik'])
             ->first();
 
-        return $this->response->setJSON([
-            'status' => 200,
-            'data'   => $pegawai
-        ]);
+        if (! $pegawai) {
+            return $this->respondError('Data pegawai tidak ditemukan', 404);
+        }
+
+        return $this->respondSuccess([
+            'data' => $pegawai,
+        ], 'Data pegawai');
     }
 }

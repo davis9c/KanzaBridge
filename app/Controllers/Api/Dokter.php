@@ -2,51 +2,43 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
+use App\Controllers\Api\BaseApiController;
 use App\Models\DokterModel;
 
-class Dokter extends BaseController
+class Dokter extends BaseApiController
 {
-    protected $dokterModel;
+    protected DokterModel $dokterModel;
 
     public function __construct()
     {
         $this->dokterModel = new DokterModel();
     }
+
     public function index()
     {
-        $loginUser = $this->request->user ?? null;
-        if (! $loginUser) {
-            return $this->response->setStatusCode(401)->setJSON([
-                'status'  => 401,
-                'message' => 'Unauthorized'
-            ]);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
         }
-        $users = $this->dokterModel->findAll();
 
-        $data = $users;
+        $data = $this->dokterModel->findAll();
 
-        return $this->response->setJSON([
-            'status'  => 200,
-            'message' => 'Data user',
-            'data'    => $data,
-        ]);
+        return $this->respondSuccess([
+            'data' => $data,
+        ], 'Data dokter');
     }
+
     public function danSpesialis()
     {
-        $loginUser = $this->request->user ?? null;
-        if (! $loginUser) {
-            return $this->response->setStatusCode(401)->setJSON([
-                'status'  => 401,
-                'message' => 'Unauthorized'
-            ]);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
         }
+
         $data = $this->dokterModel->danSpesialis();
 
-        return $this->response->setJSON([
-            'status' => 200,
-            'data'   => $data,
-        ]);
+        return $this->respondSuccess([
+            'data' => $data,
+        ], 'Data dokter dan spesialis');
     }
 }
