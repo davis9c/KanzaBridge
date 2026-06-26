@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class DokterModel extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table            = 'dokter';
     protected $primaryKey       = 'kd_dokter';
     protected $useAutoIncrement = false;

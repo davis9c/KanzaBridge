@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class JabatanModel extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table            = 'jabatan';
     protected $primaryKey       = 'kd_jbtn';
     protected $useAutoIncrement = true;

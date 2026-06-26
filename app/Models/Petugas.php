@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class Petugas extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table            = 'petugas';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;

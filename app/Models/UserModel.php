@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class UserModel extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table = 'user';
     protected $returnType = 'array';
 

@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class ApiClientModel extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table            = 'api_clients';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;

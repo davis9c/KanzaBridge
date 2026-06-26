@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class PegawaiModel extends Model
 {
+    protected $DBGroup = 'khanza';
     protected $table = 'pegawai';
     protected $primaryKey = 'id';
     protected $returnType = 'array';
