@@ -66,6 +66,19 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         | Load API Routes
         |--------------------------------------------------------------------------
 */
+$routes->get('kb-admin/setup', 'ApiV2\WebSetup::index');
+$routes->post('kb-admin/setup', 'ApiV2\WebSetup::save');
+$routes->get('kb-admin/dashboard', 'ApiV2\Dashboard::index');
+$routes->get('kb-admin/users', 'ApiV2\WebUser::index');
+$routes->get('kb-admin/users/new', 'ApiV2\WebUser::create');
+$routes->post('kb-admin/users/save', 'ApiV2\WebUser::save');
+$routes->get('kb-admin/users/edit/(:num)', 'ApiV2\WebUser::edit/$1');
+$routes->post('kb-admin/users/update/(:num)', 'ApiV2\WebUser::update/$1');
+$routes->get('kb-admin/users/delete/(:num)', 'ApiV2\WebUser::delete/$1');
+$routes->get('kb-admin/tokens', 'ApiV2\WebToken::index');
+$routes->post('kb-admin/tokens/create', 'ApiV2\WebToken::create');
+$routes->get('kb-admin/tokens/revoke/(:num)', 'ApiV2\WebToken::revoke/$1');
+
 if (file_exists(APPPATH . 'Config/RoutesApi.php')) {
     require APPPATH . 'Config/RoutesApi.php';
 }
