@@ -35,23 +35,29 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="/auth/attempt" method="POST">
+                        <form action="<?= base_url('auth/attempt') ?>" method="POST">
                             <?= csrf_field() ?>
 
                             <div class="mb-3">
-                                <label for="user_id" class="form-label">User ID</label>
-                                <input type="text" class="form-control" id="user_id" name="user_id" required autofocus
-                                    placeholder="Enter your user id" value="<?= ENVIRONMENT === 'development' ? old('user_id', '198511072009031002') : old('user_id') ?>">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required autofocus
+                                    autocomplete="username" placeholder="Masukkan username"
+                                    value="<?= old('username') ?>">
                             </div>
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
                                 <input type="password" class="form-control" id="password" name="password" required
-                                    placeholder="Enter your password" value="<?= ENVIRONMENT === 'development' ? '123' : '' ?>">
+                                    autocomplete="current-password" placeholder="Masukkan password">
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100">Login</button>
                         </form>
+
+                        <p class="text-center text-muted small mt-4 mb-0">
+                            Akun dikelola melalui UserGate.
+                            Hubungi administrator bila belum bisa login.
+                        </p>
                     </div>
                 </div>
             </div>

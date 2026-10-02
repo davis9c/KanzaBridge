@@ -19,8 +19,12 @@ $routes->get('logout', 'Auth::logout');
 |--------------------------------------------------------------------------
 | Protected Routes (Require login)
 |--------------------------------------------------------------------------
+|
+| `auth`   : session login + refresh token UserGate
+| `access` : user tanpa role hanya boleh melihat /no-access
+|
 */
-$routes->group('', ['filter' => 'auth'], function ($routes) {
+$routes->group('', ['filter' => ['auth', 'access']], function ($routes) {
     //$routes->group('', function ($routes) {
 
     /*
@@ -30,7 +34,6 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     */
     $routes->get('/', 'SysDashboard::index');
     $routes->get('dashboard', 'SysDashboard::index');
-    $routes->get('pegawai', 'Pegawai::user');
 
     /*
     |--------------------------------------------------------------------------
@@ -55,6 +58,36 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     */
     $routes->get('settings', 'SysSettings::index');
 
+    /*
+    |----------------------------------------------------------------------
+    | Manajemen User
+    |----------------------------------------------------------------------
+    |
+    | Akun dibuat di UserGate, role disimpan di DB lokal.
+    | Promote ke SuperAdmin dan hapus user: hanya SuperAdmin
+    | (dicek ulang di controller, bukan sekadar disembunyikan di view).
+    |
+    */
+    $routes->group('user', function ($routes) {
+        $routes->get('/', 'SysUser::index');
+        $routes->get('create', 'SysUser::create');
+        $routes->post('create', 'SysUser::store');
+        $routes->get('edit/(:num)', 'SysUser::edit/$1');
+        $routes->post('edit/(:num)', 'SysUser::update/$1');
+        $routes->post('toggle-status/(:num)', 'SysUser::toggleStatus/$1');
+        $routes->post('delete/(:num)', 'SysUser::destroy/$1');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Tanpa Akses
+    |----------------------------------------------------------------------
+    |
+    | Tujuan user yang berhasil login tetapi tidak punya role. Route ini
+    | selalu boleh diakses, jadi tidak tertahan AccessFilter.
+    |
+    */
+    $routes->get('no-access', 'SysNoAccess::index');
 
 });
 

@@ -2,96 +2,119 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
-use App\Models\UserModel;
-use App\Models\PegawaiModel;
-use App\Models\PetugasModel;
+use App\Libraries\UserGate\UserGateException;
+use App\Models\Access\AccessService;
+use RuntimeException;
 
+/**
+ * Autentikasi halaman web.
+ *
+ * Kredensial divalidasi oleh UserGate API; role dan status akses
+ * ditentukan oleh tabel lokal di database `default`.
+ *
+ * PENTING: ini hanya untuk halaman web. Endpoint `/api/*` punya
+ * controller sendiri (App\Controllers\Api\Auth) dan tidak tersentuh.
+ */
 class Auth extends BaseController
 {
-    protected $userModel;
-    protected $pegawaiModel;
-    protected $petugasModel;
+    private AccessService $access;
 
     public function __construct()
     {
-        $this->db           = \Config\Database::connect('khanza');
-        $this->userModel    = new UserModel();
-        $this->pegawaiModel = new PegawaiModel();
-        $this->petugasModel = new PetugasModel();
+        $this->access = new AccessService();
     }
 
     public function login()
     {
+        // Sudah login? tidak perlu melihat form lagi.
+        if (session()->get('logged_in')) {
+            return redirect()->to($this->landingPage());
+        }
+
         return view('auth/login');
     }
 
+    /**
+     * POST /auth/attempt
+     *
+     * Input: `username` + `password` (divalidasi UserGate).
+     */
     public function attempt()
     {
-        $userId   = $this->request->getPost('user_id');
-        $password = $this->request->getPost('password');
+        $username = trim((string) $this->request->getPost('username'));
+        $password = (string) $this->request->getPost('password');
 
-        if (! $userId || ! $password) {
+        if ($username === '' || $password === '') {
             return redirect()->back()
-                ->with('error', 'User ID dan password wajib diisi')
+                ->with('error', 'Username dan password wajib diisi')
                 ->withInput();
         }
 
-        // ======================
-        // 1. VALIDASI USER
-        // ======================
-        $check = $this->userModel->validateUser($userId, $password);
-
-        if ($check['total'] < 1) {
+        try {
+            $result = $this->access->authenticate($username, $password);
+        } catch (UserGateException $e) {
             return redirect()->back()
-                ->with('error', 'User ID atau password salah')
+                ->with('error', $this->authErrorMessage($e))
+                ->withInput();
+        } catch (RuntimeException $e) {
+            // Status akun tidak valid / dinonaktifkan / gagal simpan lokal.
+            return redirect()->back()
+                ->with('error', $e->getMessage())
                 ->withInput();
         }
 
-        // ======================
-        // 2. DATA PEGAWAI
-        // ======================
-        $pegawai = $this->pegawaiModel
-            ->where('nik', $userId)
-            ->first();
+        $user    = $result['user'];
+        $message = $result['is_first_user']
+            ? 'Login berhasil. Selamat datang ' . $user['full_name']
+                . ' — Anda terdaftar sebagai SuperAdmin karena Anda user pertama.'
+            : 'Login berhasil, selamat datang ' . $user['full_name'];
 
-        if (! $pegawai) {
-            return redirect()->back()
-                ->with('error', 'Data pegawai tidak ditemukan')
-                ->withInput();
+        // User tanpa role tetap boleh login, tapi tidak punya menu.
+        if (! $result['is_super_admin'] && ! $result['roles']) {
+            $message .= ' Akun Anda belum memiliki role, jadi belum ada menu yang dapat diakses.';
         }
 
-        // ======================
-        // 3. DATA PETUGAS + JABATAN
-        // ======================
-        $pegawai = $this->petugasModel->getPegawaiWithJabatan($userId);
-
-        if (! $pegawai) {
-            return redirect()->back()
-                ->with('error', 'Data pegawai tidak ditemukan')
-                ->withInput();
-        }
-
-        session()->set([
-            'user_id'    => $userId,
-            'nik'        => $pegawai['nik'],
-            'nama'       => $pegawai['nama'],
-            'kd_jabatan' => $pegawai['kd_jbtn'] ?? null,
-            'jabatan'    => $pegawai['nm_jbtn'] ?? '-',
-            'departemen' => $pegawai['departemen'],
-            'logged_in'  => true,
-        ]);
-
-
-
-        return redirect()->to('/dashboard')
-            ->with('success', 'Login berhasil, selamat datang ' . $pegawai['nama']);
+        return redirect()->to($this->landingPage())->with('success', $message);
     }
 
     public function logout()
     {
-        session()->destroy();
-        session()->setFlashdata('success', 'Berhasil logout');
-        return redirect()->to('/login');
+        $this->access->logout();
+
+        return redirect()->to(base_url('login'))
+            ->with('success', 'Berhasil logout');
+    }
+
+    /**
+     * Halaman yang dituju setelah login.
+     */
+    private function landingPage(): string
+    {
+        return has_any_role() ? base_url('dashboard') : base_url('no-access');
+    }
+
+    /**
+     * Terjemahkan kegagalan UserGate menjadi pesan yang aman ditampilkan.
+     * Pesan mentah UserGate tidak pernah dibiarkan bocor ke pengguna.
+     */
+    private function authErrorMessage(UserGateException $e): string
+    {
+        if ($e->isConfigProblem() || $e->isApiKeyProblem()) {
+            log_message('error', 'UserGate API key bermasalah: ' . $e->getMessage());
+
+            return 'Konfigurasi UserGate belum benar. Hubungi administrator sistem.';
+        }
+
+        if ($e->isRateLimited()) {
+            return 'Terlalu banyak percobaan login. Silakan coba beberapa saat lagi.';
+        }
+
+        if ($e->isServerProblem()) {
+            log_message('error', 'Gagal menghubungi UserGate: ' . $e->getMessage());
+
+            return 'Layanan autentikasi sedang tidak tersedia. Silakan coba beberapa saat lagi.';
+        }
+
+        return 'Username atau password salah.';
     }
 }

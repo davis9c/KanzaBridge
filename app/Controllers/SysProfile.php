@@ -2,40 +2,44 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
-use App\Models\UserModel;
-use App\Models\PegawaiModel;
+use App\Models\Access\UserModel;
 
+/**
+ * Profil user yang sedang login.
+ *
+ * Sumbernya adalah tabel `users` lokal — identitas yang disalin dari
+ * UserGate saat login. Data kepegawaian khanza tidak ditampilkan di sini.
+ */
 class SysProfile extends BaseController
 {
-    protected $userModel;
-    protected $pegawaiModel;
+    private UserModel $users;
 
     public function __construct()
     {
-        $this->db           = \Config\Database::connect('khanza');
-        $this->userModel    = new UserModel();
-        $this->pegawaiModel = new PegawaiModel();
+        $this->users = new UserModel();
     }
 
     public function index()
     {
-        $userId = session()->get('user_id');
+        $userId = current_user_id();
 
-        if (!$userId) {
-            return redirect()->to('/login');
+        if ($userId <= 0) {
+            return redirect()->to(base_url('login'));
         }
 
-        $user = $this->pegawaiModel->getPegawaiLengkap($userId);
+        $user = $this->users->find($userId);
 
-        if (! $user) {
-            return redirect()->to('/login')
-                ->with('error', 'Data pegawai tidak ditemukan');
+        if ($user === null) {
+            session()->destroy();
+
+            return redirect()->to(base_url('login'))
+                ->with('error', 'Data user tidak ditemukan. Silakan login kembali.');
         }
 
         return view('sys-profile', [
             'title' => 'Profile Saya',
             'user'  => $user,
+            'roles' => session('access_roles') ?: [],
         ]);
     }
 }

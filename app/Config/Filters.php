@@ -12,6 +12,7 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
+use App\Filters\AccessFilter;
 use App\Filters\AuthFilter;
 use App\Filters\Api\JwtAuthFilter;
 
@@ -30,6 +31,7 @@ class Filters extends BaseFilters
 
         // WEB - session based
         'auth'          => AuthFilter::class,
+        'access'        => AccessFilter::class,
 
         // API - JWT based
         'jwt'           => JwtAuthFilter::class,
