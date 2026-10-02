@@ -2,27 +2,28 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\Api\BaseApiController;
+use App\Libraries\Api\TokenService;
 use App\Models\UserModel;
 use App\Models\PegawaiModel;
 use App\Models\PetugasModel;
-use Firebase\JWT\JWT;
 
 class Auth extends BaseApiController
 {
     protected UserModel $userModel;
     protected PegawaiModel $pegawaiModel;
     protected PetugasModel $petugasModel;
+    protected TokenService $tokenService;
 
     public function __construct()
     {
         $this->userModel    = new UserModel();
         $this->pegawaiModel = new PegawaiModel();
         $this->petugasModel = new PetugasModel();
+        $this->tokenService = new TokenService();
     }
 
     /**
-     * Login API.
+     * POST api/auth/login
      *
      * Body JSON:
      * {
@@ -59,47 +60,42 @@ class Auth extends BaseApiController
 
         $petugas = $this->petugasModel->getPetugasAuth($pegawai['nik']);
 
+        $apiConfig = config('Api');
+
         if ($petugas) {
-            $role = 'petugas';
+            $role        = 'petugas';
             $jabatanData = $petugas;
         } else {
-            $role = 'dokter';
+            $role        = $apiConfig->defaultRole;
             $jabatanData = [
-                'kd_jbtn' => 'D1010',
-                'nm_jbtn' => 'DOKTER',
+                'kd_jbtn' => $apiConfig->defaultKdJbtn,
+                'nm_jbtn' => $apiConfig->defaultNmJbtn,
             ];
         }
 
-        $issuedAt = time();
-        $expire = $issuedAt + (int) env('JWT_TTL');
-
-        $payload = [
-            'iat' => $issuedAt,
-            'exp' => $expire,
-            'sub' => $pegawai['nik'],
-            'user' => [
-                'user_id'    => $userId,
-                'pegawai_id' => $pegawai['id'],
-                'nik'        => $pegawai['nik'],
-                'nama'       => $pegawai['nama'],
-                'role'       => $role,
-                'kd_jabatan' => $jabatanData['kd_jbtn'],
-                'jabatan'    => $jabatanData['nm_jbtn'],
-            ],
-        ];
-
-        $token = JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        $issued = $this->tokenService->issue([
+            'user_id'    => $userId,
+            'pegawai_id' => $pegawai['id'],
+            'nik'        => $pegawai['nik'],
+            'nama'       => $pegawai['nama'],
+            'role'       => $role,
+            'kd_jabatan' => $jabatanData['kd_jbtn'],
+            'jabatan'    => $jabatanData['nm_jbtn'],
+        ], $pegawai['nik']);
 
         return $this->respondSuccess([
-            'token'   => $token,
-            'expires' => date('Y-m-d H:i:s', $expire),
-            'data'    => $payload['user'],
+            'token'   => $issued['token'],
+            'expires' => $issued['expires'],
+            'data'    => $issued['payload']['user'],
         ], 'Login berhasil');
     }
 
+    /**
+     * POST api/auth/refresh
+     */
     public function refresh()
     {
-        $input = $this->getJsonInput();
+        $input        = $this->getJsonInput();
         $refreshToken = $input['refresh_token'] ?? null;
 
         if (! $refreshToken) {
@@ -116,17 +112,10 @@ class Auth extends BaseApiController
             return $this->respondError('Refresh token expired', 401);
         }
 
-        $payload = [
-            'iat' => time(),
-            'exp' => time() + (int) env('JWT_TTL'),
-            'sub' => $user['nik'],
-            'user' => $user,
-        ];
-
-        $newToken = JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        $issued = $this->tokenService->issue($user, $user['nik']);
 
         return $this->respondSuccess([
-            'token' => $newToken,
+            'token' => $issued['token'],
         ], 'Token berhasil diperbarui');
     }
 }

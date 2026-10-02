@@ -50,15 +50,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     /*
     |--------------------------------------------------------------------------
-    | Diagnostics & System Info (Admin only)
+    | Settings
     |--------------------------------------------------------------------------
     */
-    $routes->group('diagnose', ['filter' => 'role:admin'], function ($routes) {
-        $routes->get('/', 'Diagnose::extensions');
-        $routes->get('extensions', 'Diagnose::extensions');
-        $routes->get('hashid', 'Diagnose::hashid');
-        $routes->get('check-json', 'Diagnose::checkJson');
-    });
+    $routes->get('settings', 'SysSettings::index');
+
+
 });
 
 /*

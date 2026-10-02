@@ -3,7 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\Api\BaseApiController;
-use App\Models\DokterModel;
+use App\Models\Api\DokterModel;
 
 class Dokter extends BaseApiController
 {

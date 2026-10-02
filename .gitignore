@@ -178,3 +178,5 @@ build/
 # API Client files
 *.postman_collection.json
 *.postman_environment.json
+
+plan/

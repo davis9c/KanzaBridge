@@ -1,93 +1,72 @@
 <!-- Sidebar -->
-<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-
+<div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark vh-100" style="width: 280px;">
     <!-- Brand -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center"
-        href="<?= base_url('dashboard') ?>">
-        <div class="sidebar-brand-icon rotate-n-15">
-            <i class="fas fa-project-diagram"></i>
-        </div>
-        <div class="sidebar-brand-text mx-3">
-            XProject <sup>1.0</sup>
-        </div>
+    <a href="<?= base_url('dashboard') ?>" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <i class="fas fa-project-diagram fa-2x me-2"></i>
+        <span class="fs-4">Kanza Bridge</span>
     </a>
+    <hr>
 
-    <hr class="sidebar-divider my-0">
-
-    <!-- Dashboard -->
-    <li class="nav-item <?= service('uri')->getSegment(1) === 'dashboard' ? 'active' : '' ?>">
-        <a class="nav-link" href="<?= base_url('dashboard') ?>">
-            <i class="fas fa-fw fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
-    <!-- User & Role - Only for Admin -->
-    <?php if (session()->get('kd_jabatan') == env('ROLE_ADMIN')): ?>
-        <hr class="sidebar-divider">
-
-        <!-- Heading -->
-        <div class="sidebar-heading">
-            Admin System
-        </div>
+    <!-- Navigation -->
+    <ul class="nav nav-pills flex-column mb-auto">
+        <!-- Dashboard -->
         <li class="nav-item">
-            <a class="nav-link collapsed" href="#"
-                data-toggle="collapse"
-                data-target="#collapseMaster"
-                aria-expanded="false"
-                aria-controls="collapseMaster">
-
-                <i class="fas fa-fw fa-users-cog"></i>
-                <span>Manajemen User</span>
+            <a class="nav-link text-white <?= service('uri')->getSegment(1) === 'dashboard' || service('uri')->getSegment(1) === '' ? 'active' : '' ?>" href="<?= base_url('dashboard') ?>">
+                <i class="fas fa-fw fa-tachometer-alt me-2"></i>
+                Dashboard
             </a>
+        </li>
 
-            <div id="collapseMaster"
-                class="collapse <?= in_array(service('uri')->getSegment(1), ['user', 'role']) ? 'show' : '' ?>"
-                data-parent="#accordionSidebar">
-
-                <div class="bg-white py-2 collapse-inner rounded">
-                    <h6 class="collapse-header">Pengaturan:</h6>
-                    <a class="collapse-item <?= service('uri')->getSegment(1) === 'pegawai' ? 'active' : '' ?>"
-                        href="<?= base_url('pegawai') ?>">
-                        Pegawai
-                    </a>
+        <!-- Admin System -->
+        <?php if (session()->get('kd_jabatan') == env('ROLE_ADMIN')): ?>
+            <li class="nav-item">
+                <a class="nav-link text-white d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#collapseMaster" role="button" aria-expanded="false" aria-controls="collapseMaster">
+                    <span><i class="fas fa-fw fa-users-cog me-2"></i>Manajemen User</span>
+                    <i class="fas fa-chevron-down"></i>
+                </a>
+                <div class="collapse" id="collapseMaster">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link text-white <?= service('uri')->getSegment(1) === 'pegawai' ? 'active' : '' ?>" href="<?= base_url('pegawai') ?>">
+                                <i class="fas fa-fw fa-users me-2"></i>Pegawai
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            </div>
-        </li>
-    <?php endif; ?>
+            </li>
+        <?php endif; ?>
 
-    <!-- Guide -->
-    <li class="nav-item <?= service('uri')->getSegment(1) === 'guide' ? 'active' : '' ?>">
-        <a class="nav-link" href="<?= base_url('guide') ?>">
-            <i class="fas fa-fw fa-book"></i>
-            <span>Guide</span>
-        </a>
-    </li>
-
-    <!-- Diagnostics - Only for Admin -->
-    <?php if (session()->get('kd_jabatan') === env('ROLE_ADMIN')): ?>
-        <li class="nav-item <?= service('uri')->getSegment(1) === 'diagnose' ? 'active' : '' ?>">
-            <a class="nav-link" href="<?= base_url('diagnose') ?>">
-                <i class="fas fa-fw fa-tools"></i>
-                <span>Diagnostics</span>
+        <!-- Guide -->
+        <li class="nav-item">
+            <a class="nav-link text-white <?= service('uri')->getSegment(1) === 'guide' ? 'active' : '' ?>" href="<?= base_url('guide') ?>">
+                <i class="fas fa-fw fa-book me-2"></i>
+                Guide
             </a>
         </li>
-    <?php endif; ?>
 
-    <hr class="sidebar-divider d-none d-md-block">
+        <!-- Logout -->
+        <li class="nav-item">
+            <button type="button" class="nav-link text-white btn btn-link text-start w-100" style="border: none; background: none;" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                <i class="fas fa-fw fa-sign-out-alt me-2"></i>
+                Logout
+            </button>
+        </li>
+    </ul>
+
+    <hr>
 
     <!-- Current User Info -->
-    <div class="text-center d-md-block my-3">
-        <small class="text-white">
-            <strong>Logged as:</strong><br>
-            <?= session()->get('nama') ?><br>
-            <span class="badge badge-light"><?= session()->get('nm_jabatan') ?></span>
-        </small>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user-circle fa-2x me-2"></i>
+            <strong><?= session()->get('nama') ?></strong>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+            <li><a class="dropdown-item" href="<?= base_url('profile') ?>">Profil</a></li>
+            <li><a class="dropdown-item" href="<?= base_url('settings') ?>">Pengaturan</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a></li>
+        </ul>
     </div>
-
-    <!-- Sidebar Toggler -->
-    <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
-    </div>
-
-</ul>
+</div>
 <!-- End of Sidebar -->

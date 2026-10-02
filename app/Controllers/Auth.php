@@ -15,6 +15,7 @@ class Auth extends BaseController
 
     public function __construct()
     {
+        $this->db           = \Config\Database::connect('khanza');
         $this->userModel    = new UserModel();
         $this->pegawaiModel = new PegawaiModel();
         $this->petugasModel = new PetugasModel();
@@ -89,8 +90,7 @@ class Auth extends BaseController
 
     public function logout()
     {
-        //session()->destroy();
-        session()->remove(['token']);
+        session()->destroy();
         session()->setFlashdata('success', 'Berhasil logout');
         return redirect()->to('/login');
     }

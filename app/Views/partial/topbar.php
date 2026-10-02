@@ -1,47 +1,70 @@
 <!-- Topbar -->
-<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+<nav class="navbar navbar-expand navbar-light bg-white shadow-sm">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand" href="<?= base_url('dashboard') ?>">
+            <i class="fas fa-project-diagram"></i> Kanza Bridge
+        </a>
 
-    <!-- Sidebar Toggle (Topbar) -->
-    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-        <i class="fa fa-bars"></i>
-    </button>
+        <!-- Navbar Nav -->
+        <ul class="navbar-nav me-auto">
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link <?= service('uri')->getSegment(1) === 'dashboard' || service('uri')->getSegment(1) === '' ? 'active fw-bold' : '' ?>" href="<?= base_url('dashboard') ?>">
+                    <i class="fas fa-fw fa-tachometer-alt me-1"></i> Dashboard
+                </a>
+            </li>
 
-    <!-- Topbar Navbar -->
-    <ul class="navbar-nav ml-auto">
+            <!-- Admin System -->
+            <?php if (session()->get('kd_jabatan') == env('ROLE_ADMIN')): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= service('uri')->getSegment(1) === 'pegawai' ? 'active fw-bold' : '' ?>" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-fw fa-users-cog me-1"></i> Manajemen User
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                        <li>
+                            <a class="dropdown-item <?= service('uri')->getSegment(1) === 'pegawai' ? 'active' : '' ?>" href="<?= base_url('pegawai') ?>">
+                                <i class="fas fa-fw fa-users me-2"></i> Pegawai
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            <?php endif; ?>
 
-        <div class="topbar-divider d-none d-sm-block"></div>
+            <!-- Guide -->
+            <li class="nav-item">
+                <a class="nav-link <?= service('uri')->getSegment(1) === 'guide' ? 'active fw-bold' : '' ?>" href="<?= base_url('guide') ?>">
+                    <i class="fas fa-fw fa-book me-1"></i> Guide
+                </a>
+            </li>
+
+        </ul>
 
         <!-- Nav Item - User Information -->
-        <li class="nav-item dropdown no-arrow">
-            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <span class="mr-2 d-none d-lg-inline text-gray-600 small">
-                    <?= session()->get('nama') ?>
-                    <small class="text-muted">(<?= session()->get('jabatan') ?>)</small>
-                </span>
-                <img class="img-profile rounded-circle"
-                    src="<?= base_url('sb2/img/undraw_profile.svg') ?>">
-            </a>
-            <!-- Dropdown - User Information -->
-            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="<?= base_url('profile') ?>">
-                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                    Profil
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="me-2 d-none d-lg-inline text-secondary small">
+                        <?= session()->get('nama') ?>
+                        <small class="text-muted">(<?= session()->get('jabatan') ?>)</small>
+                    </span>
+                    <i class="fas fa-user-circle fa-2x text-secondary"></i>
                 </a>
-                <a class="dropdown-item" href="#">
-                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                    Pengaturan
-                </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                    Logout
-                </a>
-            </div>
-        </li>
-
-    </ul>
-
+                <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                    <a class="dropdown-item" href="<?= base_url('profile') ?>">
+                        <i class="fas fa-user fa-sm fa-fw me-2 text-muted"></i> Profil
+                    </a>
+                    <a class="dropdown-item" href="<?= base_url('settings') ?>">
+                        <i class="fas fa-cogs fa-sm fa-fw me-2 text-muted"></i> Pengaturan
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                        <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-muted"></i> Logout
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </div>
 </nav>
 <!-- End of Topbar -->

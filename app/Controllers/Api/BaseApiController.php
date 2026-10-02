@@ -2,10 +2,33 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
+use CodeIgniter\Controller;
+use CodeIgniter\HTTP\RequestInterface;
+use CodeIgniter\HTTP\ResponseInterface;
+use Psr\Log\LoggerInterface;
 
-abstract class BaseApiController extends BaseController
+/**
+ * Base controller untuk seluruh endpoint API.
+ *
+ * Sengaja TIDAK extends App\Controllers\BaseController supaya lapisan
+ * API tidak bergantung pada base class program inti (web). Semua
+ * kebutuhan bersama API — koneksi DB, parsing input, format respons —
+ * didefinisikan di sini.
+ */
+abstract class BaseApiController extends Controller
 {
+    protected $db;
+
+    public function initController(
+        RequestInterface $request,
+        ResponseInterface $response,
+        LoggerInterface $logger
+    ) {
+        parent::initController($request, $response, $logger);
+
+        $this->db = \Config\Database::connect(config('Api')->dbGroup);
+    }
+
     /**
      * Ambil payload JSON dari body request.
      * Jika JSON invalid, kembalikan array kosong.
@@ -55,9 +78,15 @@ abstract class BaseApiController extends BaseController
 
     /**
      * Pastikan request API sudah diautentikasi.
-     * Mengembalikan data user yang diletakkan oleh JwtAuthFilter.
+     * Mengembalikan data user yang diletakkan oleh JwtAuthFilter,
+     * atau objek Response 401 bila tidak terautentikasi.
+     *
+     * Pemanggil wajib memeriksa hasilnya:
+     *   if ($user instanceof ResponseInterface) { return $user; }
+     *
+     * @return array<string,mixed>|ResponseInterface
      */
-    protected function requireAuth(): mixed
+    protected function requireAuth(): array|ResponseInterface
     {
         $loginUser = $this->request->user ?? null;
 
@@ -65,6 +94,6 @@ abstract class BaseApiController extends BaseController
             return $this->respondError('Unauthorized', 401);
         }
 
-        return $loginUser;
+        return (array) $loginUser;
     }
 }

@@ -12,17 +12,14 @@ class Pegawai extends BaseController
     protected $pegawaiModel;
     public function __construct()
     {
+        $this->db           = \Config\Database::connect('khanza');
         $this->pegawaiModel = new PegawaiModel();
     }
     public function user()
     {
-        $userModel = new UserModel();
-
-        $data['users'] = $userModel->getDecryptedUsers();
-        dd($data['users']);
-        return response()->setJSON([
-            'status' => true,
-            'data'   => $data['users']
-        ]);
+        $data = [
+            'title' => 'Pegawai'
+        ];
+        return view('pegawai', $data);
     }
 }

@@ -13,7 +13,8 @@ class SysProfile extends BaseController
 
     public function __construct()
     {
-        $this->userModel = new UserModel();
+        $this->db           = \Config\Database::connect('khanza');
+        $this->userModel    = new UserModel();
         $this->pegawaiModel = new PegawaiModel();
     }
 

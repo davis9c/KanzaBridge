@@ -2,12 +2,10 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
-use App\Models\JabatanModel;
+use App\Models\Api\JabatanModel;
 use App\Models\PetugasModel;
 
-class Jabatan extends BaseController
+class Jabatan extends BaseApiController
 {
     protected JabatanModel $jabatanModel;
     protected PetugasModel $petugasModel;
@@ -17,39 +15,34 @@ class Jabatan extends BaseController
         $this->jabatanModel = new JabatanModel();
         $this->petugasModel = new PetugasModel();
     }
+
+    /**
+     * GET api/jabatan
+     *
+     * menampilkan jabatan dan kode jabatan
+     */
     public function index()
     {
-        /**
-         * menampilkan jabatan dan kode jabatan
-         */
-        $loginUser = $this->request->user ?? null;
-
-        if (! $loginUser) {
-            return $this->response
-                ->setStatusCode(401)
-                ->setJSON([
-                    'status'  => 401,
-                    'message' => 'Unauthorized',
-                ]);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
         }
-        $data = $this->jabatanModel->findAll();
-        return $this->response->setJSON([
-            'status' => 200,
-            'data'   => $data,
-        ]);
+
+        return $this->respondSuccess([
+            'data' => $this->jabatanModel->findAll(),
+        ], 'Data jabatan');
     }
 
+    /**
+     * GET api/jabatan/with-petugas
+     *
+     * menampilkan jabatan beserta petugas di bawahnya
+     */
     public function withPetugas()
     {
-        $loginUser = $this->request->user ?? null;
-
-        if (! $loginUser) {
-            return $this->response
-                ->setStatusCode(401)
-                ->setJSON([
-                    'status'  => 401,
-                    'message' => 'Unauthorized',
-                ]);
+        $loginUser = $this->requireAuth();
+        if ($loginUser instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $loginUser;
         }
 
         $jabatan = $this->jabatanModel->findAll();
@@ -65,11 +58,10 @@ class Jabatan extends BaseController
         foreach ($jabatan as &$item) {
             $item['petugas'] = $petugasByJbtn[$item['kd_jbtn']] ?? [];
         }
+        unset($item);
 
-        return $this->response->setJSON([
-            'status' => 200,
-            'data'   => $jabatan,
-        ]);
+        return $this->respondSuccess([
+            'data' => $jabatan,
+        ], 'Data jabatan dengan petugas');
     }
 }
-

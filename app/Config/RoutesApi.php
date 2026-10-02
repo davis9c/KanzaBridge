@@ -15,10 +15,8 @@ $routes->group('api', function ($routes) {
     | AUTH (PUBLIC)
     |----------------------------------------------------------------------
     */
-    //$routes->post('auth/login', 'Api\SysApiAuth::login');
     $routes->post('auth/login', 'Api\Auth::login');
-    //$routes->get('auth', 'Api\SysApiAuth::index');
-    $routes->post('auth/refresh', 'Api\SysApiAuth::refresh');
+    $routes->post('auth/refresh', 'Api\Auth::refresh');
 });
 
 $routes->group('api', ['filter' => 'jwt'], function ($routes) {
