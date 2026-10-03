@@ -14,6 +14,7 @@ use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\AccessFilter;
 use App\Filters\AuthFilter;
+use App\Filters\Api\ApiKeyAuthFilter;
 use App\Filters\Api\JwtAuthFilter;
 
 class Filters extends BaseFilters
@@ -33,8 +34,12 @@ class Filters extends BaseFilters
         'auth'          => AuthFilter::class,
         'access'        => AccessFilter::class,
 
-        // API - JWT based
+        // API - JWT based (API V1, masih live)
         'jwt'           => JwtAuthFilter::class,
+
+        // API - API key based (API V2)
+        // Argumen opsional: `apikey:dokter.read` untuk mewajibkan scope.
+        'apikey'        => ApiKeyAuthFilter::class,
     ];
 
     public array $required = [

@@ -2,10 +2,14 @@
 <?= $this->section('content') ?>
 
 <?php
-$isEdit = ! empty($user);
-$action = $isEdit
-    ? base_url('user/edit/' . $user['id'])
-    : base_url('user/create');
+/*
+ * Halaman ubah sebagai fallback kalau JavaScript tidak jalan.
+ *
+ * Tambah user memakai modal di halaman /user, jadi form ini tidak lagi
+ * punya cabang create: field password dan action create sudah dihapus
+ * bersama route GET user/create.
+ */
+$action = base_url('user/edit/' . $user['id']);
 ?>
 
 <div class="container-fluid">
@@ -78,26 +82,11 @@ $action = $isEdit
                             <?php endif; ?>
                         </div>
 
-                        <?php if (! $isEdit): ?>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                                <input type="password" class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
-                                    id="password" name="password" required minlength="8" autocomplete="new-password">
-                                <div class="form-text">
-                                    Minimal 8 karakter. Disimpan sebagai hash di UserGate dan tidak pernah
-                                    ditampilkan lagi.
-                                </div>
-                                <?php if (isset($errors['password'])): ?>
-                                    <div class="invalid-feedback"><?= esc($errors['password']) ?></div>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="alert alert-warning small">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                UserGate tidak menyediakan endpoint ubah password. Password hanya bisa
-                                diubah dengan menghapus user lalu membuatnya kembali.
-                            </div>
-                        <?php endif; ?>
+                        <div class="alert alert-warning small">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            UserGate tidak menyediakan endpoint ubah password. Password hanya bisa
+                            diubah dengan menghapus user lalu membuatnya kembali.
+                        </div>
 
                     </div>
                 </div>
@@ -149,7 +138,7 @@ $action = $isEdit
                         <?php endif; ?>
 
                     </div>
-                    <div class="card-footer d-flex gap-2 bg-white">
+                    <div class="card-footer d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-fw fa-save me-1"></i> Simpan
                         </button>

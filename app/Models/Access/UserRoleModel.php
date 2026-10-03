@@ -61,6 +61,42 @@ class UserRoleModel extends Model
     }
 
     /**
+     * Role milik seorang user sebagai pasangan id + nama.
+     *
+     * Dipakai untuk mengisi checkbox role di UI. Pencocokan HARUS lewat
+     * `role_id`, bukan nama: nama di tabel (`SUPER_ADMIN`) berbeda dari label
+     * tampilan (`SuperAdmin`) yang dikeluarkan Config\Access::$roleLabels, jadi
+     * mencocokkan nama dengan label selalu gagal.
+     *
+     * Id dan nama diambil dalam satu query supaya tidak menambah round-trip
+     * per baris tabel.
+     *
+     * @return list<array{role_id:int, name:string, is_super:int}>
+     */
+    public function rolesFor(int $userId): array
+    {
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $rows = $this->db->table('user_roles')
+            ->select('user_roles.role_id, roles.name, roles.is_super')
+            ->join('roles', 'roles.id = user_roles.role_id', 'inner')
+            ->where('user_roles.user_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        return array_map(
+            static fn (array $row): array => [
+                'role_id'  => (int) $row['role_id'],
+                'name'     => (string) $row['name'],
+                'is_super' => (int) $row['is_super'],
+            ],
+            $rows
+        );
+    }
+
+    /**
      * @return list<array<string,mixed>> Baris user_roles lengkap dengan nama role.
      */
     public function assignmentsFor(int $userId): array

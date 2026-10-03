@@ -87,7 +87,18 @@ class AccessService
         $local = $this->users->syncFromUserGate((int) $local['id'], $remote);
 
         if (strtoupper((string) $local['status']) === UserModel::STATUS_INACTIVE) {
-            throw new RuntimeException('Akun Anda dinonaktifkan oleh administrator.');
+            // Dua kondisi yang sama-sama menolak login, tapi penyebabnya beda
+            // dan pemakaiannya juga beda. `markLogin()` baru dipanggil
+            // SESUDAH cek ini, jadi `last_login_at` yang null berarti akun ini
+            // belum pernah berhasil masuk sama sekali — bukan "pernah aktif
+            // lalu dicabut".
+            $neverActivated = $local['last_login_at'] === null;
+
+            throw new RuntimeException(
+                $neverActivated
+                    ? 'Akun Anda belum diaktifkan. Hubungi administrator untuk mengaktifkannya.'
+                    : 'Akun Anda dinonaktifkan oleh administrator.'
+            );
         }
 
         $this->users->markLogin((int) $local['id']);
@@ -178,7 +189,7 @@ class AccessService
             'access_is_super'    => $this->isSuperAdminRole($roles),
         ]);
 
-        // Kunci lama dipakai sidebar/topbar. Pertahankan supaya view yang
+        // Kunci lama masih dipakai topbar. Pertahankan supaya view yang
         // belum ikut disentuh tidak ikut rusak.
         session()->set([
             'user_id' => (string) $user['usergate_id'],
@@ -227,13 +238,27 @@ class AccessService
         return in_array($role, $this->currentRoles(), true);
     }
 
+    /**
+     * Apakah user adalah SuperAdmin?
+     *
+     * DB lokal adalah satu-satunya sumber kebenaran. Nilai `access_is_super`
+     * di session SENGAJA tidak dipakai untuk memberi hak: session dibuat saat
+     * login, jadi kalau role-nya diubah setelah itu, session masih memegang
+     * flag lama. Dengan memercayai session, user yang bar saja di-demote dari
+     * SuperAdmin tetap punya hak penuh sampai logout/login.
+     *
+     * Arah sebaliknya tidak pernah bermasalah — promote langsung berlaku begitu
+     * DB berubah — dan sekarang keduanya berlaku seketika.
+     *
+     * Sengaja TIDAK di-cache. Helper `is_super_admin()` menyimpan satu instance
+     * AccessService di `static`, dan instance itu bisa hidup melewati beberapa
+     * request pada satu proses PHP — persis yang terjadi di feature test.
+     * Cache yang tidak di-reset per request akan membocorkan hak milik user
+     * sebelumnya ke user berikutnya yang punya id sama. Query ulang lebih aman,
+     * dan ini lookup primary key yang murah.
+     */
     public function isSuperAdmin(): bool
     {
-        if (session('access_is_super')) {
-            return true;
-        }
-
-        // Fallback ke DB, karena nilai di session bisa saja sudah tua.
         $userId = (int) session('access_user_id');
 
         if ($userId <= 0) {
@@ -275,6 +300,50 @@ class AccessService
         }
     }
 
+    /**
+     * Apakah user boleh mengelola aplikasi API tertentu.
+     *
+     * SuperAdmin mengelola semua aplikasi. Admin hanya aplikasi yang
+     * ia buat sendiri — inilah bedanya dengan `assertSuperAdmin`, yang
+     * selalu menyisakan SuperAdmin dengan akses penuh.
+     *
+     * Aplikasi tanpa owner (`created_by` NULL, diisi manual di DB) hanya
+     * boleh dikelola SuperAdmin: tidak ada akun yang bisa dimintai
+     * pertanggungjawabannya.
+     *
+     * @param array<string,mixed> $application
+     */
+    public function canManageApiApplication(array $application): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $ownerId = $application['created_by'] ?? null;
+
+        if ($ownerId === null) {
+            return false;
+        }
+
+        return (int) $ownerId === (int) session('access_user_id');
+    }
+
+    /**
+     * @param array<string,mixed> $application
+     *
+     * @throws RuntimeException
+     */
+    public function assertCanManageApiApplication(array $application): void
+    {
+        if ($this->canManageApiApplication($application)) {
+            return;
+        }
+
+        throw new RuntimeException(
+            'Anda hanya dapat mengelola application yang Anda buat sendiri.'
+        );
+    }
+
     /* ------------------------------------------------------------------ *
      *  INTERNAL
      * ------------------------------------------------------------------ */
@@ -283,8 +352,16 @@ class AccessService
      * Buat baris user lokal untuk akun UserGate yang belum pernah login.
      *
      * Kalau tabel `users` masih kosong, user ini sekaligus menjadi
-     * SuperAdmin. Kalau tidak, user dibuat TANPA role, sehingga bisa login
-     * tetapi tidak punya menu sampai administrator memberikan role.
+     * SuperAdmin. Kalau tidak, user dibuat TANPA role dan NONAKTIF, sehingga
+     * dia bisa login tapi ditolak sampai administrator mengaktifkannya dan
+     * memberikan role.
+     *
+     * Status default INACTIVE bukan sekadar formalitas: `isFirstUser`
+     * ditentukan dari `users->total() === 0`. Kalau tabel `users` pernah
+     * dikosongkan — restore dump yang tidak lengkap, misalnya — siapa pun yang
+     * login berikutnya akan otomatis menjadi SuperAdmin. Dengan default
+     * nonaktif, setidaknya akun itu harus ditolak lebih dulu sebelum dia
+     * dipakai, dan test bootstrap tidak bisa lolos diam-diam.
      *
      * @param  array<string,mixed> $remote
      * @return array{0: array<string,mixed>, 1: bool} User lokal + status "user pertama".
@@ -301,12 +378,20 @@ class AccessService
                 $isFirstUser = true;
             }
 
+            // Pastikan seluruh role bawaan ada SEBELUM user pertama dibuat, supaya
+            // role yang baru dibuat user pertama memakai id yang sudah benar.
+            $this->roles->ensureDefaults();
+
             $localId = $this->users->createLocal([
                 'usergate_id' => (string) $remote['id'],
                 'username'    => (string) ($remote['username'] ?? ''),
                 'email'       => (string) ($remote['email'] ?? ''),
                 'full_name'   => (string) ($remote['full_name'] ?? ''),
-                'status'      => UserModel::STATUS_ACTIVE,
+
+                // Hanya user pertama yang otomatis aktif. Dia satu-satunya
+                // SuperAdmin sistem, jadi kalau juga nonaktif tidak akan ada
+                // yang bisa mengaktifkan siapa pun.
+                'status'      => $isFirstUser ? UserModel::STATUS_ACTIVE : UserModel::STATUS_INACTIVE,
             ]);
 
             if ($isFirstUser) {

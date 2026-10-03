@@ -79,6 +79,30 @@ if (! function_exists('has_any_role')) {
     }
 }
 
+if (! function_exists('has_any_of_roles')) {
+    /**
+     * Apakah user punya salah satu dari role yang diberikan?
+     *
+     * Berbeda dengan has_any_role() yang hanya menanyakan "punya role apa
+     * pun". Yang ini dipakai untuk membatasi route: `Config\Access::$restrictedRoutes`
+     * menyebut role yang boleh membuka sebuah route, dan AccessFilter serta
+     * topbar membacanya lewat helper ini supaya keduanya memakai satu sumber
+     * kebenaran.
+     *
+     * @param list<string> $roles
+     */
+    function has_any_of_roles(array $roles): bool
+    {
+        if ($roles === []) {
+            return false;
+        }
+
+        $mine = session('access_roles');
+
+        return is_array($mine) && array_intersect($mine, $roles) !== [];
+    }
+}
+
 if (! function_exists('is_super_admin')) {
     /**
      * Apakah user adalah SuperAdmin?

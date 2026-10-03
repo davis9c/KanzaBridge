@@ -23,7 +23,7 @@
                 </div>
             <?php endif; ?>
 
-            <table class="table table-bordered table-striped mb-0">
+            <table class="table table-striped mb-0">
                 <tr>
                     <th width="30%">Username</th>
                     <td><?= esc($user['username'] ?? '-') ?></td>

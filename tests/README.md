@@ -40,6 +40,37 @@ Make sure that you provide a database engine that is currently running on your m
 More details on a test database setup are in the
 [Testing Your Database](https://codeigniter.com/user_guide/testing/database.html) section of the documentation.
 
+### Wajib: test harus memakai database uji
+
+Feature/unit test yang memakai `Tests\Support\Database\LocalAccessDatabaseTrait`
+**meng-TRUNCATE** tabel `users`, `roles`, `user_roles`, `api_applications`,
+`api_keys`, dan `api_key_scopes`. Trait itu menolak jalan kecuali nama database
+sesuai `database.default.database` adalah `test`, `testing`, atau `:memory:`
+— nama `khanzabridge` sengaja tidak ada di sana, karena isinya adalah akun user
+sungguhan hasil login UserGate dan tidak bisa dipulihkan dari dalam aplikasi.
+
+Buat database uji lalu arahkan lewat `phpunit.xml` (git-ignored):
+
+```console
+> mysql -e "CREATE DATABASE testing DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+> mysqldump -h127.0.0.1 -uUSER -pPASS --no-data --add-drop-table khanzabridge | mysql -uUSER -pPASS testing
+```
+
+```xml
+<!-- phpunit.xml -->
+<php>
+    <env name="database.default.database" value="testing"/>
+    <env name="database.default.username" value="..."/>
+    <env name="database.default.password" value="..."/>
+    <env name="database.default.hostname" value="127.0.0.1"/>
+</php>
+```
+
+Harus lewat `<env>` di `phpunit.xml`, **bukan** environment variable dari shell.
+`env()` di CodeIgniter membaca `$_ENV`/`$_SERVER` lebih dulu, dan
+`DotEnv::load()` mengisi keduanya dari `.env` sebelum konfigurasi dibaca — jadi
+`FOO=bar php spark ...` selalu kalah oleh nilai di `.env`.
+
 ## Running the tests
 
 The entire test suite can be run by simply typing one command-line command from the main directory.

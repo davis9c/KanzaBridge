@@ -115,7 +115,24 @@ final class AccessBootstrapTest extends CIUnitTestCase
         );
         $firstLocalId = (int) $first['user']['id'];
 
-        // User kedua => berhasil login, tetapi tanpa role.
+        // User kedua TIDAK bisa login: baris lokalnya baru dibuat dan
+        // default-nya nonaktif.
+        try {
+            $this->authenticate(
+                FakeUserGateClient::authFor('uuid-2', 'tanpa-role', 'tk@example.com', 'Tanpa Role')
+            );
+            $this->fail('Login user kedua seharusnya ditolak: akun baru default nonaktif.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('belum diaktifkan', $e->getMessage());
+        }
+
+        // Setelah administrator mengaktifkan, login berhasil — dan user
+        // tersebut tetap TANPA role.
+        $secondLocal = $this->users->findByUserGateId('uuid-2');
+        $this->assertSame(UserModel::STATUS_INACTIVE, $secondLocal['status']);
+
+        $this->users->setStatus((int) $secondLocal['id'], UserModel::STATUS_ACTIVE);
+
         $second = $this->authenticate(
             FakeUserGateClient::authFor('uuid-2', 'tanpa-role', 'tk@example.com', 'Tanpa Role')
         );
@@ -132,6 +149,30 @@ final class AccessBootstrapTest extends CIUnitTestCase
         $this->assertSame(['SUPER_ADMIN'], $this->userRoles->roleNamesFor($firstLocalId));
     }
 
+    /**
+ * Tabel `roles` yang kosong tidak boleh membuat user pertama terjebak:
+ * form "Ubah User" membaca daftar role dari tabel itu, jadi kalau role
+ * bawaan tidak dibuat saat login, tidak ada checkbox yang bisa dicentang.
+ */
+public function testRoleBawaanTerjaminOlehLoginPertama(): void
+    {
+        // Sengaja TIDAK memanggil seedRoles() — tabel roles kosong.
+        $this->assertSame(0, $this->db->table('roles')->countAllResults());
+
+        $result = $this->authenticate(
+            FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin')
+        );
+
+        $this->assertTrue($result['is_first_user']);
+        $this->assertSame(['SUPER_ADMIN'], $result['roles'], 'User pertama tetap SuperAdmin.');
+
+        // Kedua role harus ada supaya form role punya pilihan.
+        $names = array_column($this->roles->listRoles(), 'name');
+
+        $this->assertContains('SUPER_ADMIN', $names);
+        $this->assertContains('ADMIN', $names);
+    }
+
     public function testFieldRolesDariUserGateDiabaikan(): void
     {
         $this->seedRoles();
@@ -139,6 +180,16 @@ final class AccessBootstrapTest extends CIUnitTestCase
         $this->authenticate(
             FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin')
         );
+
+        // User kedua dibuat lokal lebih dulu — default-nya nonaktif.
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'budi', 'budi@example.com', 'Budi'));
+        } catch (\RuntimeException) {
+            // diharapkan: belum diaktifkan
+        }
+
+        $local = $this->users->findByUserGateId('uuid-2');
+        $this->users->setStatus((int) $local['id'], UserModel::STATUS_ACTIVE);
 
         // authFor() selalu menyertakan roles: ["ADMIN"] dari UserGate.
         // User kedua TIDAK boleh mendapat role dari situ.
@@ -160,6 +211,141 @@ final class AccessBootstrapTest extends CIUnitTestCase
         );
 
         $this->assertSame(['SUPER_ADMIN'], $result['roles']);
+    }
+
+    /**
+     * Akun yang dibuat lokal default-nya NONAKTIF, apa pun role-nya.
+     *
+     * Ini inti dari aturan "default nonaktif": punya role ADMIN tidak
+     * otomatis berarti boleh masuk. Yang menentukan adalah status.
+     */
+    public function testPenggunaKeduaDibuatNonaktif(): void
+    {
+        $this->seedRoles();
+
+        $this->authenticate(FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin'));
+
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'budi', 'budi@example.com', 'Budi'));
+        } catch (\RuntimeException) {
+            // diharapkan
+        }
+
+        $local = $this->users->findByUserGateId('uuid-2');
+
+        $this->assertNotNull($local);
+        $this->assertSame(
+            UserModel::STATUS_INACTIVE,
+            $local['status'],
+            'User kedua harus dibuat nonaktif.'
+        );
+    }
+
+    /**
+     * Role dan status independen: user yang langsung diberi role ADMIN pun
+     * tetap harus diaktifkan manual oleh administrator.
+     */
+    public function testRoleAdminTidakMembuatUserOtomatisAktif(): void
+    {
+        $this->seedRoles();
+
+        $this->authenticate(FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin'));
+
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'budi', 'budi@example.com', 'Budi'));
+        } catch (\RuntimeException) {
+            // diharapkan
+        }
+
+        $local = $this->users->findByUserGateId('uuid-2');
+        $admin = $this->roles->findByName('ADMIN');
+
+        // Administrator memberikan role ADMIN...
+        (new UserRoleModel())->attach((int) $local['id'], (int) $admin['id']);
+
+        // ...statusnya tetap nonaktif dan login masih ditolak.
+        $this->assertSame(UserModel::STATUS_INACTIVE, $local['status']);
+        $this->assertSame(['ADMIN'], (new UserRoleModel())->roleNamesFor((int) $local['id']));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('belum diaktifkan');
+
+        $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'budi', 'budi@example.com', 'Budi'));
+    }
+
+    /**
+     * Hanya user pertama yang otomatis aktif. Kalau dia juga nonaktif, tidak
+     * akan ada SuperAdmin yang bisa mengaktifkan siapa pun.
+     */
+    public function testHanyaPenggunaPertamaYangOtomatisAktif(): void
+    {
+        $this->seedRoles();
+
+        $result = $this->authenticate(
+            FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin')
+        );
+
+        $this->assertTrue($result['is_first_user']);
+        $this->assertSame(
+            UserModel::STATUS_ACTIVE,
+            $result['user']['status'],
+            'SuperAdmin pertama harus otomatis aktif.'
+        );
+
+        // Sebaliknya, user kedua tidak mendapat perlakuan khusus.
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'budi', 'budi@example.com', 'Budi'));
+        } catch (\RuntimeException) {
+            // diharapkan
+        }
+
+        $second = $this->users->findByUserGateId('uuid-2');
+
+        $this->assertSame(UserModel::STATUS_INACTIVE, $second['status']);
+    }
+
+    /**
+     * Dua kondisi nonaktif dibedakan pesannya, karena tindakan yang perlu
+     * dilakukan user juga berbeda: minta diaktifkan, atau melapor.
+     *
+     * Pembeda: `markLogin()` dipanggil SESUDAH cek status, jadi akun yang
+     * belum pernah berhasil masuk punya `last_login_at` NULL.
+     */
+    public function testPesanNonaktifDibedakan(): void
+    {
+        $this->seedRoles();
+
+        $this->authenticate(FakeUserGateClient::authFor('uuid-1', 'admin', 'admin@example.com', 'Admin'));
+
+        // 1. Belum pernah aktif -> "belum diaktifkan".
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'baru', 'baru@example.com', 'Baru'));
+            $this->fail('Harus ditolak.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('belum diaktifkan', $e->getMessage());
+            $this->assertStringNotContainsString('dinonaktifkan', $e->getMessage());
+        }
+
+        $local = $this->users->findByUserGateId('uuid-2');
+        $this->users->setStatus((int) $local['id'], UserModel::STATUS_ACTIVE);
+
+        // Login sekali supaya last_login_at terisi, lalu dicabut lagi.
+        $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'baru', 'baru@example.com', 'Baru'));
+        $this->users->setStatus((int) $local['id'], UserModel::STATUS_INACTIVE);
+
+        $this->assertNotNull(
+            (new UserModel())->find((int) $local['id'])['last_login_at'],
+            'Prasyarat: user sudah pernah login.'
+        );
+
+        // 2. Sudah pernah aktif lalu dicabut -> "dinonaktifkan".
+        try {
+            $this->authenticate(FakeUserGateClient::authFor('uuid-2', 'baru', 'baru@example.com', 'Baru'));
+            $this->fail('Harus ditolak.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('dinonaktifkan oleh administrator', $e->getMessage());
+            $this->assertStringNotContainsString('belum diaktifkan', $e->getMessage());
+        }
     }
 
     public function testPenggunaTidakAktifDiUserGateDitolak(): void

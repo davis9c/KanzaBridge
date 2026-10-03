@@ -3,6 +3,7 @@
 namespace Tests\Support\Libraries;
 
 use App\Libraries\UserGate\UserGateClient;
+use App\Libraries\UserGate\UserGateException;
 
 /**
  * UserGateClient tiruan untuk pengujian.
@@ -23,6 +24,56 @@ class FakeUserGateClient extends UserGateClient
 
     /** @var list<array<string,mixed>> Panggilan logout yang tercatat. */
     public array $logoutCalls = [];
+
+    /** @var list<array{id:string,payload:array<string,mixed>}> Panggilan updateUser. */
+    public array $updateCalls = [];
+
+    /** @var list<string> Id yang diteruskan ke deleteUser. */
+    public array $deleteCalls = [];
+
+    /** @var array<string,mixed>|null Respons createUser. */
+    public ?array $createResponse = null;
+
+    /** @var UserGateException|null Kalau diisi, operasi berikutnya gagal. */
+    public ?UserGateException $failWith = null;
+
+    /**
+     * Semua operasi bermuara ke sini — tidak pernah ada HTTP request.
+     *
+     * Tanpa ini, test yang memanggil SysUser akan benar-benar menghubungi
+     * UserGate produksi.
+     */
+    private function guard(): void
+    {
+        if ($this->failWith !== null) {
+            throw $this->failWith;
+        }
+    }
+
+    public function createUser(string $accessToken, array $payload): array
+    {
+        $this->guard();
+
+        return $this->createResponse ?? $payload + ['id' => 'uuid-dari-fake'];
+    }
+
+    public function updateUser(string $accessToken, string $id, array $payload): array
+    {
+        $this->guard();
+
+        $this->updateCalls[] = ['id' => $id, 'payload' => $payload];
+
+        return $payload;
+    }
+
+    public function deleteUser(string $accessToken, string $id): array
+    {
+        $this->guard();
+
+        $this->deleteCalls[] = $id;
+
+        return [];
+    }
 
     public function __construct(?array $authResponse = null)
     {

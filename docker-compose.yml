@@ -1,0 +1,85 @@
+# ===========================================================================
+# KanzaBridge — CodeIgniter 4 + Apache
+#
+# Catatan: database TIDAK memakai service di file ini. Dua database yang
+# dibutuhkan aplikasi (khanzabridge untuk grup `default`, sik_beta untuk grup
+# `khanza`) diasumsikan sudah ada di server MySQL eksternal.
+#
+#   docker compose up -d --build
+#   docker compose logs -f app
+#   docker compose exec app php spark migrate:status
+# ===========================================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kanzabridge-app:latest
+    container_name: kanzabridge-app
+    restart: unless-stopped
+
+    ports:
+      # ------------------------------------------------------------------
+      # PENTING: nilai di bawah harus sama dengan `app.baseURL` di .env.
+      #
+      #   .env sekarang    : app.baseURL = http://localhost:9050
+      #   default di sini  : 8081  <-- TIDAK COCOK, harus disamakan.
+      #
+      # Supaya sinkron dengan .env sekarang, tambahkan baris ini ke .env:
+      #   APP_PORT = 9050
+      #
+      # Compose membaca .env untuk interpolasi, jadi baris di atas otomatis
+      # memetakan host port 9050 ke port 80 container. Alternatifnya, ubah
+      # app.baseURL di .env menjadi http://localhost:8081 dan biarkan default.
+      # ------------------------------------------------------------------
+      - "${APP_PORT:-8081}:80"
+
+    volumes:
+      # .env hanya dibaca, bukan ditimpa image.
+      - ./.env:/var/www/html/.env:ro
+
+      # Log, session, cache, dan upload ikut tersimpan di host. Ownership
+      # diurus otomatis oleh entrypoint, jadi tidak perlu ubah manual di host.
+      - ./writable:/var/www/html/writable
+
+    environment:
+      # Container env SELALU menang atas isi file .env (CI4 membaca konfigurasi
+      # lewat getenv(), dan DotEnv hanya menimpa kalau variabel belum ada).
+      #
+      # Karena database bersifat eksternal, hostname di dalam .env yang
+      # berbunyi `localhost` tidak akan resolve dari dalam container.
+      # Aktifkan salah satu baris di bawah sesuai lokasi server MySQL Anda:
+      #
+      #   1) MySQL di host yang sama dengan Docker:
+      #      database.default.hostname: host.docker.internal
+      #      database.khanza.hostname:   host.docker.internal
+      #
+      #   2) MySQL di mesin/server lain:
+      #      database.default.hostname: 192.168.1.10
+      #      database.khanza.hostname:   192.168.1.10
+
+      # 3) lewat variabel, agar nama host di .env tidak perlu diubah:
+      #    database.default.hostname: ${DB_HOST:-host.docker.internal}
+      #    database.khanza.hostname:   ${DB_HOST:-host.docker.internal}
+
+      # Kalau hostname di .env sudah bukan localhost (mis. nama server),
+      # tidak perlu ada override di sini.
+
+      # --- Perilaku entrypoint ---------------------------------------------
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+      WAIT_FOR_DB: "${WAIT_FOR_DB:-true}"
+      DB_WAIT_TIMEOUT: "${DB_WAIT_TIMEOUT:-60}"
+
+    # Membantu container menghubungi MySQL yang jalan di host mesin ini.
+    # Tidak diperlukan pada Docker Desktop (sudah ada bawaan), tapi wajib untuk
+    # Linux karena `localhost` di dalam container berarti container itu sendiri.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 80, $e, $s, 3) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

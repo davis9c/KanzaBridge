@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# Berkas yang TIDAK ikut dikirim ke docker daemon.
+#
+# Tujuannya: context build kecil, cepat, dan tidak membocorkan rahasia.
+# Jangan menghapus salah satu baris di bawah tanpa alasan, atau build
+# Dockerfile akan gagal karena berkas yang di-COPY tidak ada di context.
+# ---------------------------------------------------------------------------
+
+# --- Git & OS ---------------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Rahasia ---------------------------------------------------------------
+# .env berisi credential database, JWT_SECRET, dan HASHIDS_SALT.
+# Di-mount saat runtime oleh docker-compose.yml, bukan dibaked ke image.
+.env
+.env copy
+*.env.local
+
+# Berkas contoh `env` memuat nilai HASHIDS_SALT & JWT_SECRET asli
+# (masih ter-track di git) dan tidak dipakai image, jadi jangan dikirim.
+env
+
+# --- Dependency -------------------------------------------------------------
+# Dibangun ulang di dalam image oleh composer, tidak perlu dari host.
+vendor/
+node_modules/
+
+# --- Testing ---------------------------------------------------------------
+tests/
+build/
+builds
+phpunit.xml
+phpunit.xml.dist
+.phpunit.result.cache
+
+# --- Dokumentasi & dump database ---------------------------------------------
+# plan/ memuat .sql sampai 17MB.
+*.md
+*.txt
+plan/
+*.sql
+*.sql.gz
+
+# --- Isi runtime yang sudah di-handle image & volume ------------------------
+# Folder writable/ tetap ikut (direktori + .htaccess-nya) supaya image punya
+# struktur yang benar; hanya isinya yang dibuang.
+writable/*
+!writable/.htaccess
+!writable/index.html
+
+# --- Docker ------------------------------------------------------------------
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# --- Editor ------------------------------------------------------------------
+.idea/
+.vscode/

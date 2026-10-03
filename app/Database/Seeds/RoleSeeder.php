@@ -2,6 +2,7 @@
 
 namespace App\Database\Seeds;
 
+use App\Models\Access\RoleModel;
 use CodeIgniter\Database\Seeder;
 use Config\Database;
 use Config\UserGate as UserGateConfig;
@@ -14,21 +15,22 @@ use Config\UserGate as UserGateConfig;
  *
  * TIDAK membuat user apa pun. User pertama yang login ke UserGate
  * otomatis menjadi SuperAdmin (lihat AccessService::authenticate).
+ *
+ * Perhatikan: role bawaan sebenarnya sudah dijamin ada setiap kali user
+ * login, lewat RoleModel::ensureDefaults(). Seeder ini karena itu hanya
+ * langkah pemeliharaan — dipakai setelah restore backup atau ketika
+ * database disiapkan tanpa lewat login.
  */
 class RoleSeeder extends Seeder
 {
-    private const ROLES = [
-        [
-            'name'        => 'SUPER_ADMIN',
-            'description' => 'Akses penuh, termasuk menetapkan SuperAdmin dan menghapus user.',
-            'is_super'    => 1,
-        ],
-        [
-            'name'        => 'ADMIN',
-            'description' => 'Akses biasa ke seluruh menu, tanpa hak menetapkan SuperAdmin.',
-            'is_super'    => 0,
-        ],
-    ];
+    /**
+     * Daftar role di-delegate ke RoleModel::DEFAULT_ROLES supaya tidak ada
+     * dua sumber kebenaran. Seeder tetap ada karena langkah ini kadang perlu
+     * dijalankan manual, misalnya setelah restore backup.
+     *
+     * @var list<array{name:string, description:string, is_super:int}>
+     */
+    private const ROLES = RoleModel::DEFAULT_ROLES;
 
     public function run()
     {

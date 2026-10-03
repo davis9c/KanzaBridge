@@ -22,7 +22,7 @@
                         sehingga belum ada menu yang dapat Anda akses.
                     </p>
 
-                    <div class="card bg-light border-0 text-start mx-auto mb-4" style="max-width: 32rem;">
+                    <div class="card border-0 text-start mx-auto mb-4" style="max-width: 32rem;">
                         <div class="card-body">
                             <dl class="row mb-0 small">
                                 <dt class="col-sm-4 text-muted">Username</dt>
