@@ -55,6 +55,14 @@ class ApiScope extends BaseConfig
             'description' => 'Nama application, key, dan daftar endpoint yang diizinkan. Dipakai untuk memverifikasi key tanpa mengambil data SIMRS.',
             'readonly'    => true,
         ],
+        'auth.login' => [
+            'group'       => 'auth',
+            'label'       => 'Login aplikasi',
+            'method'      => 'POST',
+            'path'        => 'api/v2/auth/login',
+            'description' => 'Validasi `user_id` + `password` dan kembalikan profil pegawai (`pegawai_id`, `nik`, `nama`, `kd_jabatan`, `jabatan`). Tidak menerbitkan token dan tidak menulis ke sik_beta.',
+            'readonly'    => true,
+        ],
 
         'users.read' => [
             'group'       => 'user',
@@ -163,6 +171,7 @@ class ApiScope extends BaseConfig
      */
     public array $groupLabels = [
         'meta'     => 'Meta',
+        'auth'     => 'Autentikasi',
         'user'     => 'User',
         'pegawai'  => 'Pegawai',
         'dokter'   => 'Dokter',
@@ -176,7 +185,7 @@ class ApiScope extends BaseConfig
      *
      * @var list<string>
      */
-    public array $groupOrder = ['meta', 'user', 'pegawai', 'petugas', 'dokter', 'jabatan'];
+    public array $groupOrder = ['meta', 'auth', 'user', 'pegawai', 'petugas', 'dokter', 'jabatan'];
 
     public function __construct()
     {

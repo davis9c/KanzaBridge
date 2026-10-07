@@ -65,6 +65,8 @@ $routes->group('api/v2', function ($routes) {
 
     $routes->get('me', 'Api\V2\Meta::me', ['filter' => 'apikey:meta.read']);
 
+    $routes->post('auth/login', 'Api\V2\Auth::login', ['filter' => 'apikey:auth.login']);
+
     $routes->get('users', 'Api\V2\User::index', ['filter' => 'apikey:users.read']);
 
     $routes->get('pegawai', 'Api\V2\Pegawai::index', ['filter' => 'apikey:pegawai.read']);
