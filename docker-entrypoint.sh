@@ -73,6 +73,10 @@ fi
 db_reachable() {
 	php -r '
 		$group = $argv[1] ?? "default";
+		$appDir = $argv[2] ?? getcwd();
+		require $appDir . "/vendor/autoload.php";
+		(new \CodeIgniter\Config\DotEnv($appDir))->load();
+
 		$get = static function (string $key, string $fallback = "") use ($group): string {
 			$value = getenv("database." . $group . "." . $key);
 			return ($value === false || $value === "") ? $fallback : $value;
@@ -93,7 +97,7 @@ db_reachable() {
 
 		$conn = @new mysqli($host, $user, $pass, $name, $port);
 		exit($conn->connect_errno === 0 ? 0 : 1);
-	' -- "$1"
+	' -- "$1" "$APP_DIR"
 }
 
 DB_READY=false

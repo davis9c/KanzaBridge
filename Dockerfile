@@ -37,9 +37,10 @@ FROM php:8.3-apache
 #             dan `khanza` (sik_beta)
 # mbstring -> helper dan manipulasi string bawaan CodeIgniter
 # intl     -> collation & format multibita untuk data non-ASCII
+# bcmath   -> operasi matematika presisi yang digunakan Hashids
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends libicu-dev libonig-dev \
-	&& docker-php-ext-install -j"$(nproc)" intl mbstring mysqli \
+	&& docker-php-ext-install -j"$(nproc)" bcmath intl mbstring mysqli \
 	&& a2enmod rewrite \
 	&& rm -rf /var/lib/apt/lists/*
 

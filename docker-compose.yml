@@ -21,19 +21,11 @@ services:
 
     ports:
       # ------------------------------------------------------------------
-      # PENTING: nilai di bawah harus sama dengan `app.baseURL` di .env.
-      #
-      #   .env sekarang    : app.baseURL = http://localhost:9050
-      #   default di sini  : 8081  <-- TIDAK COCOK, harus disamakan.
-      #
-      # Supaya sinkron dengan .env sekarang, tambahkan baris ini ke .env:
-      #   APP_PORT = 9050
-      #
-      # Compose membaca .env untuk interpolasi, jadi baris di atas otomatis
-      # memetakan host port 9050 ke port 80 container. Alternatifnya, ubah
-      # app.baseURL di .env menjadi http://localhost:8081 dan biarkan default.
+      # Port 80 adalah port Apache di dalam container. Port host Windows
+      # default 8091; samakan app.baseURL di .env dengan port host ini.
+      # Untuk mengubahnya, set APP_PORT di .env lalu sesuaikan app.baseURL.
       # ------------------------------------------------------------------
-      - "${APP_PORT:-8081}:80"
+      - "${APP_PORT:-8091}:80"
 
     volumes:
       # .env hanya dibaca, bukan ditimpa image.
@@ -78,7 +70,7 @@ services:
       - "host.docker.internal:host-gateway"
 
     healthcheck:
-      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 80, $e, $s, 3) ? 0 : 1);"]
+      test: [ "CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 80) ? 0 : 1);" ]
       interval: 30s
       timeout: 5s
       retries: 3

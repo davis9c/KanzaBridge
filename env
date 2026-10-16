@@ -9,11 +9,24 @@
 # to override the setting, you must un-comment it by removing the '#'
 # at the beginning of the line.
 #--------------------------------------------------------------------
+#--------------------------------------------------------------------
+# USERGATE - autentikasi web (pengganti login lokal)
+#====================================================================
+usergate.baseUrl = https://usergate.***/api/v1
+usergate.apiKey = "ugk_live_***"
+usergate.timeout = 15
+usergate.refreshSkew = 60
 
+#--------------------------------------------------------------------
+# KANZA Secret
+#--------------------------------------------------------------------
+SECRET_USER = nur
+SECRET_PASSWORD = windi
+ROLE_ADMIN = J002
 #--------------------------------------------------------------------
 # ENVIRONMENT
 #--------------------------------------------------------------------
-CI_ENVIRONMENT = development
+CI_ENVIRONMENT = production
 #--------------------------------------------------------------------
 # ENVIRONMENT
 #--------------------------------------------------------------------
@@ -26,36 +39,32 @@ JWT_TTL=3600
 #--------------------------------------------------------------------
 # APP
 #--------------------------------------------------------------------
-app.baseURL = ''
-#If you have trouble with `.`, you could also use `_`.
-app_baseURL = ''
+app.baseURL = http://localhost:8091/
+APP_PORT = 8091
+# If you have trouble with `.`, you could also use `_`.
+# app_baseURL = ''
 # app.forceGlobalSecureRequests = false
 # app.CSPEnabled = false
 #--------------------------------------------------------------------
-# DATABASE
+# DATABASE APP KHANZA BRIDGE
 #--------------------------------------------------------------------
-database.default.hostname = 
-database.default.database = 
+database.default.hostname = host.docker.internal
+database.default.database = db_ar_khanzabridge
 database.default.username = 
 database.default.password = 
 database.default.DBDriver = MySQLi
 database.default.DBPrefix =
 database.default.port = 3306
-# =====================================================
-# DATABASE KHANZA SIMRS
-# =====================================================
-database.khanza.hostname = 
-database.khanza.database = 
+#--------------------------------------------------------------------
+# DATABASE SIK
+#--------------------------------------------------------------------
+database.khanza.hostname = host.docker.internal
+database.khanza.database = db_ar_sik
 database.khanza.username = 
 database.khanza.password = 
 database.khanza.DBDriver = MySQLi
 database.khanza.port = 3306
-#--------------------------------------------------------------------
-# KANZA Secret
-#--------------------------------------------------------------------
-SECRET_USER = nur
-SECRET_PASSWORD = windi
-ROLE_ADMIN = J002
+
 # If you use MySQLi as tests, first update the values of Config\Database::$tests.
 # database.tests.hostname = localhost
 # database.tests.database = ci4_test
