@@ -31,7 +31,7 @@ RUN composer install \
 # demanding php ^8.2 (composer.json sendiri masih menulis ^8.1, lebih longgar).
 # Jangan diturunkan ke 8.1 atau composer install akan gagal.
 # ===========================================================================
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # mysqli   -> koneksi MySQL untuk grup database `default` (khanzabridge)
 #             dan `khanza` (sik_beta)
