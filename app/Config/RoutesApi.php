@@ -85,3 +85,33 @@ $routes->group('api/v2', function ($routes) {
     $routes->post('petugas/by-nips', 'Api\V2\Petugas::getByNips', ['filter' => 'apikey:petugas.by-nips']);
     $routes->post('petugas/by-nip', 'Api\V2\Petugas::getByNip', ['filter' => 'apikey:petugas.by-nip']);
 });
+
+/*
+|----------------------------------------------------------------------
+| API V2 (KB-ADMIN / JWT)
+|----------------------------------------------------------------------
+| Route dari branch fitur/selengkapan-testing. Endpoint yang sudah ada
+| di V2 API-key di atas (auth/login, GET users) tetap memakai versi
+| main agar proteksi API-key tidak tertimpa.
+*/
+$routes->group('kb-api/v2', function ($routes) {
+    $routes->get('auth/me', 'ApiV2\Auth::me');
+    $routes->post('auth/logout', 'ApiV2\Auth::logout');
+
+    $routes->get('users/roles', 'ApiV2\Users::roles');
+    $routes->get('users/(:num)', 'ApiV2\Users::show/$1');
+    $routes->post('users', 'ApiV2\Users::create');
+    $routes->put('users/(:num)', 'ApiV2\Users::update/$1');
+    $routes->delete('users/(:num)', 'ApiV2\Users::delete/$1');
+
+    $routes->get('tokens', 'ApiV2\Tokens::index');
+    $routes->post('tokens', 'ApiV2\Tokens::create');
+    $routes->delete('tokens/(:num)', 'ApiV2\Tokens::delete/$1');
+
+    $routes->get('produk', 'ApiV2\Produk::index');
+    $routes->get('produk/(:num)', 'ApiV2\Produk::show/$1');
+
+    $routes->get('database/tables', 'ApiV2\DatabaseInfo::tables');
+    $routes->get('pegawai/list', 'ApiV2\DatabaseInfo::pegawai');
+    $routes->get('pegawai/list/(:num)', 'ApiV2\DatabaseInfo::pegawaiById/$1');
+});
